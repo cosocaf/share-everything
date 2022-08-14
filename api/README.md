@@ -2,4 +2,5 @@
 
 Share Everythingのバックエンドだよ。
 
-nginx + node + typescript + dockerで開発予定だよ。
+nginx + mongo + node + typescript + dockerで開発予定だよ。
+

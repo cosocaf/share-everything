@@ -17,47 +17,90 @@ try {
   console.log("Succesfully connected to mongo.");
 } catch (e) {
   console.error(e);
+  process.exit(1);
 }
 
 const db = client.db();
 
-const rooms = db.collection("rooms");
+type Room = {
+  id: string;
+  content: string;
+};
 
-app.post("/rooms", async (_, res) => {
+const rooms = db.collection<Room>("rooms");
+
+// TODO: express v5以降は非同期関数渡せるようになるらしいよ
+
+app.post("/rooms", (_, res) => {
   // TODO: 認証機能とかあったほうがいいよね
   const id = v4();
 
-  try {
-    await rooms.insertOne({ id, content: "" });
-    res.send({ status: "success", result: { id } });
-  } catch (e) {
-    if (e instanceof Error) {
-      res.send({ status: "error", reason: e.message });
-    } else {
-      res.send({ status: "error", reason: "Unknown Error." });
-    }
-  }
+  rooms
+    .insertOne({ id, content: "" })
+    .then(() => {
+      res.send({ status: "success", result: { id } });
+    })
+    .catch((err) => {
+      if (err instanceof Error) {
+        res.send({ status: "error", reason: err.message });
+      } else {
+        res.send({ status: "error", reason: "Unknown Error." });
+      }
+    });
 });
-app.get("/rooms/:id", async (req, res) => {
+
+app.get("/rooms/:id", (req, res) => {
   const id = req.params.id;
 
-  try {
-    const room = await rooms.findOne({ id }, { content: 1 });
-    if (room) {
-      res.send({ status: "success", result: { content: room.content } });
-    } else {
-      res.send({ status: "error", reason: "Invalid ID." });
-    }
-  } catch (e) {
-    if (e instanceof Error) {
-      res.send({ status: "error", reason: e.message });
-    } else {
-      res.send({ status: "error", reason: "Unknown Error." });
-    }
-  }
+  rooms
+    .findOne({ id }, { projection: { content: 1 } })
+    .then((room) => {
+      if (room) {
+        res.send({ status: "success", result: { content: room.content } });
+      } else {
+        throw new Error("Invalid ID.");
+      }
+    })
+    .catch((err) => {
+      if (err instanceof Error) {
+        res.send({ status: "error", reason: err.message });
+      } else {
+        res.send({ status: "error", reason: "Unknown Error." });
+      }
+    });
 });
-app.put("/rooms/:id", async (req, res) => {
+app.put("/rooms/:id/:content", (req, res) => {
   const id = req.params.id;
+  const content = req.params.content;
+
+  rooms
+    .updateOne({ id }, { $set: { content } })
+    .then(() => {
+      res.send({ status: "success", result: {} });
+    })
+    .catch((err) => {
+      if (err instanceof Error) {
+        res.send({ status: "error", reason: err.message });
+      } else {
+        res.send({ status: "error", reason: "Unknown Error." });
+      }
+    });
+});
+app.delete("/rooms/:id", (req, res) => {
+  const id = req.params.id;
+
+  rooms
+    .deleteOne({ id })
+    .then(() => {
+      res.send({ status: "success", result: {} });
+    })
+    .catch((err) => {
+      if (err instanceof Error) {
+        res.send({ status: "error", reason: err.message });
+      } else {
+        res.send({ status: "error", reason: "Unknown Error." });
+      }
+    });
 });
 
 app.listen(8080, "0.0.0.0", () => {

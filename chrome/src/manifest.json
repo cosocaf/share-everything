@@ -1,0 +1,29 @@
+{
+  "name": "Share Everything",
+  "description": "Share EverythingクライアントのChrome拡張機能",
+  "version": "1.0",
+  "manifest_version": 3,
+  "permissions": ["scripting", "storage", "contextMenus"],
+  "host_permissions": ["<all_urls>"],
+  "customElementsVersion": 1,
+  "web_accessible_resources": [
+    {
+      "resources": ["*.html", "*.css", "assets/**/*"],
+      "matches": ["http://*/*", "https://*/*"],
+      "use_dynamic_url": true
+    }
+  ],
+  "icons": {
+    "16": "assets/icon_16x16.png",
+    "48": "assets/icon_48x48.png",
+    "128": "assets/icon_128x128.png"
+  },
+  "action": {
+    "default_title": "Share Everything",
+    "default_icon": "assets/icon_48x48.png",
+    "default_popup": "popup.html"
+  },
+  "background": {
+    "service_worker": "background.js"
+  }
+}

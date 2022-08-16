@@ -1,0 +1,36 @@
+{
+  "name": "share-everything-chrome-extension",
+  "version": "1.0.0",
+  "description": "Share EverythingクライアントのChrome実装",
+  "main": "index.js",
+  "scripts": {
+    "watch:file": "cpx -w src/**/*.{json,css,html,png} dist",
+    "watch:tsc": "tsc -w",
+    "dev": "run-p watch:file watch:tsc",
+    "copy": "cpx src/**/*.{json,css,html,png} dist",
+    "build:tsc": "tsc",
+    "build": "run-p copy build:tsc"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cosocaf/share-everything.git"
+  },
+  "author": "cosocaf",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/cosocaf/share-everything/issues"
+  },
+  "homepage": "https://github.com/cosocaf/share-everything#readme",
+  "devDependencies": {
+    "@types/chrome": "^0.0.193",
+    "@typescript-eslint/eslint-plugin": "^5.33.0",
+    "@typescript-eslint/parser": "^5.33.0",
+    "cpx": "^1.5.0",
+    "eslint": "^8.22.0",
+    "eslint-config-prettier": "^8.5.0",
+    "eslint-plugin-import": "^2.26.0",
+    "npm-run-all": "^4.1.5",
+    "prettier": "^2.7.1",
+    "typescript": "^4.7.4"
+  }
+}

@@ -1,11 +1,13 @@
 import express from "express";
 import helmet from "helmet";
+import cors from "cors";
 import { MongoClient } from "mongodb";
 
 import { v4 } from "uuid";
 
 const app = express();
 app.use(helmet());
+app.use(cors());
 app.use(express.json());
 
 const client = new MongoClient(

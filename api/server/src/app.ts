@@ -1,12 +1,16 @@
 import express from "express";
 import helmet from "helmet";
+import cors from "cors";
 import { MongoClient } from "mongodb";
+import crypto from "crypto";
 
-import { v4 } from "uuid";
+// import { v4 } from "uuid";
 
 const app = express();
 app.use(helmet());
+app.use(cors());
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
 const client = new MongoClient(
   "mongodb://admin:admin@mongo/share-everything?authSource=admin",
@@ -33,7 +37,10 @@ const rooms = db.collection<Room>("rooms");
 
 app.post("/rooms", (_, res) => {
   // TODO: 認証機能とかあったほうがいいよね
-  const id = v4();
+  // const id = v4(); // UUIDとか長すぎてタイプが無理だから却下
+
+  // これのためだけにcryptoつかうのはオーバースペックな気がする
+  const id = crypto.randomBytes(6).toString("base64").substring(0, 6);
 
   rooms
     .insertOne({ id, content: "" })
@@ -69,23 +76,26 @@ app.get("/rooms/:id", (req, res) => {
       }
     });
 });
-app.put("/rooms/:id/:content", (req, res) => {
-  const id = req.params.id;
-  const content = req.params.content;
+app.put(
+  "/rooms/:id",
+  (req: express.Request<{ id: string }, unknown, { content: string }>, res) => {
+    const id = req.params.id;
+    const content = req.body.content;
 
-  rooms
-    .updateOne({ id }, { $set: { content } })
-    .then(() => {
-      res.send({ status: "success", result: {} });
-    })
-    .catch((err) => {
-      if (err instanceof Error) {
-        res.send({ status: "error", reason: err.message });
-      } else {
-        res.send({ status: "error", reason: "Unknown Error." });
-      }
-    });
-});
+    rooms
+      .updateOne({ id }, { $set: { content } })
+      .then(() => {
+        res.send({ status: "success", result: {} });
+      })
+      .catch((err) => {
+        if (err instanceof Error) {
+          res.send({ status: "error", reason: err.message });
+        } else {
+          res.send({ status: "error", reason: "Unknown Error." });
+        }
+      });
+  },
+);
 app.delete("/rooms/:id", (req, res) => {
   const id = req.params.id;
 

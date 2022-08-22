@@ -1,6 +1,6 @@
 db.createUser({
-  user: "admin",
-  pwd: "admin",
+  user: "local_user",
+  pwd: "local_password",
   roles: [
     {
       role: "readWrite",

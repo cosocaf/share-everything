@@ -2,9 +2,12 @@ import express from "express";
 import helmet from "helmet";
 import cors from "cors";
 import { MongoClient } from "mongodb";
+import { config } from "dotenv";
 import crypto from "crypto";
 
 // import { v4 } from "uuid";
+
+config();
 
 const app = express();
 app.use(helmet());
@@ -12,8 +15,11 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+const userName = process.env.USER_NAME || "local_user";
+const password = process.env.USER_PASSWORD || "local_password";
+const hostName = process.env.HOST_NAME || "localhost";
 const client = new MongoClient(
-  "mongodb://admin:admin@mongo/share-everything?authSource=admin",
+  `mongodb+srv://${userName}:${password}@${hostName}/?retryWrites=true&w=majority`,
 );
 
 try {

@@ -2,7 +2,7 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 // ↑型定義めんどいからとりま設定、後でちゃんとしようね
 
-const process = async (
+const processCopy = async (
   info: chrome.contextMenus.OnClickData,
   tab: chrome.tabs.Tab,
 ) => {
@@ -17,7 +17,7 @@ const process = async (
     }
     return;
   }
-
+  if (!("ROOM_ID_KEY" in storage)) return;
   const id = storage.ROOM_ID_KEY as string;
 
   let content = "";
@@ -31,7 +31,7 @@ const process = async (
     return;
   }
 
-  // TODO: キャーー！！ディレクトリトラバーサルされちゃうーーー！！！(express君頑張って♡)
+  // TODO: ディレクトリトラバーサルとか大丈夫？
   await fetch(`http://localhost:8080/rooms/${id}`, {
     method: "PUT",
     headers: {
@@ -39,6 +39,43 @@ const process = async (
     },
     body: JSON.stringify({ content }),
   });
+};
+
+const processClipboard = async (
+  info: chrome.contextMenus.OnClickData,
+  tab: chrome.tabs.Tab,
+) => {
+  const storage = await chrome.storage.local.get(["ROOM_ID_KEY"]);
+  if (!("ROOM_ID_KEY" in storage)) {
+    if (tab.id) {
+      const dialog = document.getElementsByTagName(
+        "share-everything-content-dialog",
+      )[0];
+      if (!(dialog instanceof HTMLElement)) return;
+      dialog.style.visibility = "visible";
+    }
+    return;
+  }
+  if (!("ROOM_ID_KEY" in storage)) return;
+  const id = storage.ROOM_ID_KEY as string;
+
+  const response = await fetch(`http://localhost:8080/rooms/${id}`, {
+    method: "GET",
+  });
+  const json = await response.json();
+
+  if (json.status === "error") {
+    alert("情報の取得に失敗しました。");
+    console.error(json.reason);
+    return;
+  }
+
+  const content = String(json.result.content);
+
+  navigator.clipboard
+    .writeText(content)
+    .then(() => alert("コピーしました。"))
+    .catch(() => alert("コピーできませんでした。"));
 };
 
 const onTabLoaded = async () => {
@@ -124,8 +161,14 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo) => {
 
 chrome.runtime.onInstalled.addListener(() => {
   chrome.contextMenus.create({
-    id: "share-everything",
-    title: "Share Everythingで共有",
+    id: "share-everything-share",
+    title: "共有",
+    type: "normal",
+    contexts: ["all"],
+  });
+  chrome.contextMenus.create({
+    id: "share-everything-clipboard",
+    title: "クリップボードにコピー",
     type: "normal",
     contexts: ["all"],
   });
@@ -133,16 +176,26 @@ chrome.runtime.onInstalled.addListener(() => {
 
 chrome.contextMenus.onClicked.addListener((info, tab) => {
   switch (info.menuItemId) {
-    case "share-everything":
+    case "share-everything-share":
       if (tab?.id) {
         chrome.scripting
           .executeScript({
             target: { tabId: tab.id },
-            func: process,
+            func: processCopy,
             args: [info, tab],
           })
           .catch(console.error);
       }
       break;
+    case "share-everything-clipboard":
+      if (tab?.id) {
+        chrome.scripting
+          .executeScript({
+            target: { tabId: tab.id },
+            func: processClipboard,
+            args: [info, tab],
+          })
+          .catch(console.error);
+      }
   }
 });

@@ -1,0 +1,11 @@
+#include "resource.h"
+
+IDC_CONTEXTMENU MENU
+BEGIN
+  POPUP ""
+  BEGIN
+    MENUITEM "Setting", IDM_SETTING
+    MENUITEM SEPARATOR
+    MENUITEM "E&xit", IDM_EXIT
+  END
+END

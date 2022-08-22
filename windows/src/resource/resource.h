@@ -1,0 +1,3 @@
+#define IDM_SETTING 151
+#define IDM_EXIT 152
+#define IDC_CONTEXTMENU 201

@@ -8,20 +8,36 @@ services:
       - server
     ports:
       - 8080:80
+    environment:
+      - PORT=${PORT}
 
   server:
     build: ./server
     container_name: server
     depends_on:
       - mongo
+    environment:
+      DB_PROTOCOL: ${DB_PROTOCOL}
+      DB_USER_NAME: ${DB_USER_NAME}
+      DB_USER_PASSWORD: ${DB_USER_PASSWORD}
+      DB_HOST_NAME: ${DB_HOST_NAME}
+      DB_NAME: ${DB_NAME}
 
   mongo:
-    image: mongo
+    image: mongo:latest
+    restart: always
     container_name: mongo
     environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: root
       MONGO_INITDB_DATABASE: admin
+      DB_USER_NAME: ${DB_USER_NAME}
+      DB_USER_PASSWORD: ${DB_USER_PASSWORD}
+      DB_NAME: ${DB_NAME}
+    ports:
+      - 27017:27017
     volumes:
-      - ./mongo/init.js:/docker-entrypoint-initdb.d/init.js:ro
+      - ./mongo/init.sh:/docker-entrypoint-initdb.d/init.sh:ro
       - ./mongo/mongo-data:/data/db
-    command: [mongod, --auth]
-
+    command:
+      - mongod

@@ -2,12 +2,10 @@ import express from "express";
 import helmet from "helmet";
 import cors from "cors";
 import { MongoClient } from "mongodb";
-import { config } from "dotenv";
 import crypto from "crypto";
+import createError from "http-errors";
 
 // import { v4 } from "uuid";
-
-config();
 
 const app = express();
 app.use(helmet());
@@ -15,12 +13,15 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-const userName = process.env.USER_NAME || "local_user";
-const password = process.env.USER_PASSWORD || "local_password";
-const hostName = process.env.HOST_NAME || "localhost";
-const client = new MongoClient(
-  `mongodb+srv://${userName}:${password}@${hostName}/?retryWrites=true&w=majority`,
-);
+const protocol = process.env.DB_PROTOCOL || "";
+const userName = process.env.DB_USER_NAME || "";
+const password = process.env.DB_USER_PASSWORD || "";
+const hostName = process.env.DB_HOST_NAME || "";
+const dbName = process.env.DB_NAME || "";
+
+const url = `${protocol}://${userName}:${password}@${hostName}/${dbName}?retryWrites=true&w=majority&authSource=admin`;
+console.log(`Connecting: ${url}`);
+const client = new MongoClient(url);
 
 try {
   await client.connect();
@@ -117,6 +118,10 @@ app.delete("/rooms/:id", (req, res) => {
         res.send({ status: "error", reason: "Unknown Error." });
       }
     });
+});
+
+app.use((_req, _res, next) => {
+  return next(createError(404));
 });
 
 app.listen(8080, "0.0.0.0", () => {

@@ -1,3 +1,16 @@
+/**
+ * @file notify_icon.cpp
+ * @author cosocaf (cosocaf@gmail.com)
+ * @brief 
+ * @version 0.1
+ * @date 2022-08-26
+ * 
+ * notify_icon.hの実装。
+ * 
+ * @copyright Copyright (c) 2022
+ * 
+ */
+
 #include "notify_icon.h"
 
 #include <shellapi.h>

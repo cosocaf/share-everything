@@ -38,11 +38,31 @@ FetchContent_Declare(
   GIT_TAG v1.1.0
 )
 FetchContent_GetProperties(rapidjson)
+
 if(NOT rapidjson_POPULATED)
   FetchContent_Populate(rapidjson)
 endif()
 
 include_directories(${rapidjson_SOURCE_DIR}/include)
+
+set(CMAKE_USE_OPENSSL)
+include(FindOpenSSL)
+include(FindCURL)
+
+include(ExternalProject)
+
+ExternalProject_Add(
+  zlib
+  GIT_REPOSITORY "https://github.com/madler/zlib"
+  GIT_TAG "v1.2.12"
+  PREFIX "${CMAKE_BINARY_DIR}/zlib"
+  CMAKE_CACHE_ARGS
+  "-DBUILD_SHARED_LIBS:BOOL=OFF"
+  "-DCMAKE_INSTALL_PREFIX:PATH=${CMAKE_BINARY_DIR}"
+)
+
+include_directories(${PROJECT_BINARY_DIR}/include)
+link_directories(${PROJECT_BINARY_DIR}/lib)
 
 include_directories(${SRC_DIR})
 add_subdirectory(${SRC_DIR})

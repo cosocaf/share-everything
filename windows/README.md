@@ -18,6 +18,12 @@ Share EverythingクライアントのWindows実装です。Mac/Linuxの対応は
 
 リポジトリはクローンしている前提です。
 
+OpenSSLとCURLが入ってないとビルドできません。
+入ってない人は頑張って入れてください。
+
+`openssl.exe`と`curl.ext`ではありません。
+`libssl.lib`と`libcurl_a.lib`です。
+
 `CMake`の設定をする。
 
 ```sh

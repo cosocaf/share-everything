@@ -90,7 +90,8 @@
       "regex": "cpp",
       "stack": "cpp",
       "unordered_map": "cpp",
-      "xhash": "cpp"
+      "xhash": "cpp",
+      "cassert": "cpp"
     }
   },
   "tasks": {

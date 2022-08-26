@@ -4,11 +4,13 @@ add_executable(
   share-everything
   pch.cpp
   tchar_util.cpp
+  result.cpp
   main.cpp
   logger.cpp
+  storage.cpp
   app.cpp
   notify_icon.cpp
-  fetch.cpp
+  api.cpp
 )
 target_sources(
   share-everything PRIVATE
@@ -16,4 +18,5 @@ target_sources(
   ${CMAKE_CURRENT_SOURCE_DIR}/resource/menu.rc
 )
 
-target_link_libraries(share-everything Ws2_32)
+add_dependencies(share-everything zlib)
+target_link_libraries(share-everything Pathcch Wldap32 OpenSSL::SSL CURL::libcurl zlibstaticd)

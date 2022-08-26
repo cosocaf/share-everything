@@ -1,3 +1,16 @@
+/**
+ * @file logger.cpp
+ * @author cosocaf (cosocaf@gmail.com)
+ * @brief 
+ * @version 0.1
+ * @date 2022-08-26
+ * 
+ * logger.hの実装。
+ * 
+ * @copyright Copyright (c) 2022
+ * 
+ */
+
 #include "logger.h"
 
 #include <fcntl.h>
@@ -39,13 +52,15 @@ namespace share_everything {
     return true;
   }
 
-  // TODO: あまりにも雑すぎる仕様の改善
   void Logger::log(tstring_view logLevel,
                    tstring_view message,
                    tstring_view group,
                    tstring_view func,
                    tstring_view file,
                    int line) {
+    if (!consoleEnabled) {
+      return;
+    }
     auto now  = std::chrono::system_clock::now();
     auto text = std::format(_T("{} {} {}/{} {}\n  at {}:{}"),
                             now,

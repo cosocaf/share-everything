@@ -1,14 +1,22 @@
+/**
+ * @file app.cpp
+ * @author cosocaf (cosocaf@gmail.com)
+ * @brief
+ * @version 0.1
+ * @date 2022-08-26
+ *
+ * app.hの実装。
+ *
+ * @copyright Copyright (c) 2022
+ *
+ */
+
 #include "app.h"
 
 #include <Richedit.h>
-#include <rapidjson/document.h>
-#include <rapidjson/encodings.h>
-#include <rapidjson/stringbuffer.h>
-#include <rapidjson/writer.h>
 
 #include <format>
 
-#include "fetch.h"
 #include "logger.h"
 #include "resource/resource.h"
 
@@ -19,19 +27,6 @@
 #define IDH_PASTE 1002
 
 namespace share_everything {
-#ifdef _UNICODE
-  using tValue        = rapidjson::GenericValue<rapidjson::UTF16<>>;
-  using tDocument     = rapidjson::GenericDocument<rapidjson::UTF16<>>;
-  using tStringBuffer = rapidjson::GenericStringBuffer<rapidjson::UTF16<>>;
-  using tWriter
-    = rapidjson::Writer<tStringBuffer, rapidjson::UTF16<>, rapidjson::UTF16<>>;
-#else
-  using tValue        = rapidjson::Value;
-  using tDocument     = rapidjson::Document;
-  using tStringBuffer = rapidjson::StringBuffer;
-  using tWriter       = rapidjson::Writer<tStringBuffer>;
-#endif
-
   App::App(HINSTANCE hInst)
     : hInst(hInst),
       hWnd(nullptr),
@@ -103,9 +98,6 @@ namespace share_everything {
     LOG_INFO(_T("Created App instance."), _T("App"));
   }
   App::~App() {
-    if (id) {
-      deleteId();
-    }
     if (hWnd != nullptr) {
       UnregisterHotKey(hWnd, IDH_COPY);
       UnregisterHotKey(hWnd, IDH_PASTE);
@@ -155,40 +147,16 @@ namespace share_everything {
       return;
     }
 
-    this->id = id;
+    storage[storageRoomKey] = tstrToStr(id);
+
     LOG_INFO(_T("ID successfully saved."), _T("App"));
     MessageBox(hWnd, _T("IDを保存しました。"), _T("成功"), MB_ICONINFORMATION);
   }
   void App::deleteId() {
-    if (!id) return;
-    auto response = fetch(HttpRequest(
-      HttpMethod::Delete, std::format(_T("/rooms/{}"), id.value()), {}));
-    if (!response) {
-      MessageBox(hWnd, _T("通信に失敗しました。"), _T("ERROR"), MB_ICONERROR);
-      return;
-    }
-
-    if (response->status != 200) {
-      MessageBox(hWnd, _T("通信に失敗しました。"), _T("ERROR"), MB_ICONERROR);
-      return;
-    }
-
-    tDocument doc;
-    doc.Parse(response->body.data());
-    if (doc.HasParseError()) {
+    auto result = apiClient.deleteRoom(storage[storageRoomKey]);
+    if (!result) {
       MessageBox(
-        hWnd, _T("JSONの解析に失敗しました。"), _T("ERROR"), MB_ICONERROR);
-      return;
-    }
-
-    if (!doc[_T("status")].IsString()) {
-      MessageBox(hWnd, _T("削除に失敗しました。"), _T("ERROR"), MB_ICONERROR);
-      return;
-    }
-
-    LPCTSTR status = doc[_T("status")].GetString();
-    if (_tcscmp(status, _T("success")) != 0) {
-      MessageBox(hWnd, _T("削除に失敗しました。"), _T("ERROR"), MB_ICONERROR);
+        hWnd, strToTstr(result.err()).c_str(), _T("Error"), MB_ICONERROR);
       return;
     }
 
@@ -196,50 +164,20 @@ namespace share_everything {
     MessageBox(hWnd, _T("IDを削除しました。"), _T("成功"), MB_ICONINFORMATION);
   }
   void App::registerId() {
-    auto response = fetch(HttpRequest(HttpMethod::Post, _T("/rooms"), {}));
-    if (!response) {
-      MessageBox(hWnd, _T("通信に失敗しました。"), _T("ERROR"), MB_ICONERROR);
-      return;
-    }
-
-    if (response->status != 200) {
-      MessageBox(hWnd, _T("通信に失敗しました。"), _T("ERROR"), MB_ICONERROR);
-      return;
-    }
-
-    tDocument doc;
-    doc.Parse(response->body.data());
-    if (doc.HasParseError()) {
+    auto result = apiClient.createRoom();
+    if (!result) {
       MessageBox(
-        hWnd, _T("JSONの解析に失敗しました。"), _T("ERROR"), MB_ICONERROR);
+        hWnd, strToTstr(result.err()).c_str(), _T("Error"), MB_ICONERROR);
       return;
     }
 
-    if (!doc[_T("status")].IsString()) {
-      MessageBox(hWnd, _T("登録に失敗しました。"), _T("ERROR"), MB_ICONERROR);
-      return;
-    }
-
-    LPCTSTR status = doc[_T("status")].GetString();
-    if (_tcscmp(status, _T("success")) != 0) {
-      MessageBox(hWnd, _T("登録に失敗しました。"), _T("ERROR"), MB_ICONERROR);
-      return;
-    }
-
-    if (!doc[_T("result")].IsObject()) {
-      MessageBox(hWnd, _T("登録に失敗しました。"), _T("ERROR"), MB_ICONERROR);
-      return;
-    }
-
-    if (!doc[_T("result")][_T("id")].IsString()) {
-      MessageBox(hWnd, _T("登録に失敗しました。"), _T("ERROR"), MB_ICONERROR);
-      return;
-    }
-
-    tstring id = doc[_T("result")][_T("id")].GetString();
+    auto id = strToTstr(result.get());
 
     if (!OpenClipboard(hWnd)) {
-      MessageBox(hWnd, _T("登録に失敗しました。"), _T("ERROR"), MB_ICONERROR);
+      MessageBox(hWnd,
+                 _T("クリップボードにアクセスできません。"),
+                 _T("ERROR"),
+                 MB_ICONERROR);
       return;
     }
     EmptyClipboard();
@@ -255,8 +193,6 @@ namespace share_everything {
 #endif
     CloseClipboard();
 
-    this->id = id;
-
     LOG_INFO(_T("ID successfully registered."), _T("App"));
     LOG_INFO(_T("ID copied to clipboard."), _T("App"));
 
@@ -266,6 +202,8 @@ namespace share_everything {
       _T("成功"),
       MB_ICONINFORMATION);
 
+    storage[storageRoomKey] = tstrToStr(id);
+
     SetWindowText(hIdInput, id.c_str());
 
     InvalidateRect(hWnd, nullptr, TRUE);
@@ -273,49 +211,16 @@ namespace share_everything {
   }
 
   void App::uploadText(tstring_view text) {
-    if (!id) {
+    if (storage[storageRoomKey].empty()) {
       LOG_INFO(_T("No ID registered."), _T("App"));
       return;
     }
 
-    tStringBuffer buffer;
-    tWriter writer(buffer);
-    writer.StartObject();
-    writer.Key(_T("content"));
-    writer.String(text.data());
-    writer.EndObject();
-
-    auto response
-      = fetch(HttpRequest(HttpMethod::Put,
-                          std::format(_T("/rooms/{}"), id.value()),
-                          { { _T("Content-Type"), _T("application/json") } },
-                          buffer.GetString()));
-    if (!response) {
-      MessageBox(hWnd, _T("通信に失敗しました。"), _T("ERROR"), MB_ICONERROR);
-      return;
-    }
-
-    if (response->status != 200) {
-      MessageBox(hWnd, _T("通信に失敗しました。"), _T("ERROR"), MB_ICONERROR);
-      return;
-    }
-
-    tDocument doc;
-    doc.Parse(response->body.data());
-    if (doc.HasParseError()) {
+    auto result
+      = apiClient.putContent(storage[storageRoomKey], tstrToStr(text));
+    if (!result) {
       MessageBox(
-        hWnd, _T("JSONの解析に失敗しました。"), _T("ERROR"), MB_ICONERROR);
-      return;
-    }
-
-    if (!doc[_T("status")].IsString()) {
-      MessageBox(hWnd, _T("登録に失敗しました。"), _T("ERROR"), MB_ICONERROR);
-      return;
-    }
-
-    LPCTSTR status = doc[_T("status")].GetString();
-    if (_tcscmp(status, _T("success")) != 0) {
-      MessageBox(hWnd, _T("登録に失敗しました。"), _T("ERROR"), MB_ICONERROR);
+        hWnd, strToTstr(result.err()).c_str(), _T("Error"), MB_ICONERROR);
       return;
     }
 
@@ -323,7 +228,7 @@ namespace share_everything {
   }
 
   void App::copy() {
-    if (!id) {
+    if (storage[storageRoomKey].empty()) {
       LOG_INFO(_T("No ID registered."), _T("App"));
       setWindowVisibility(true);
       MessageBox(hWnd,
@@ -372,7 +277,7 @@ namespace share_everything {
     clipboardMonitorEnabled = true;
   }
   void App::paste() {
-    if (!id) {
+    if (storage[storageRoomKey].empty()) {
       LOG_INFO(_T("No ID registered."), _T("App"));
       setWindowVisibility(true);
       MessageBox(hWnd,
@@ -389,52 +294,14 @@ namespace share_everything {
       return;
     }
 
-    auto response = fetch(HttpRequest(
-      HttpMethod::Get, std::format(_T("/rooms/{}"), id.value()), {}));
-    if (!response) {
-      MessageBox(hWnd, _T("通信に失敗しました。"), _T("ERROR"), MB_ICONERROR);
-      return;
-    }
-
-    if (response->status != 200) {
-      MessageBox(hWnd, _T("通信に失敗しました。"), _T("ERROR"), MB_ICONERROR);
-      return;
-    }
-
-    tDocument doc;
-    doc.Parse(response->body.data());
-    if (doc.HasParseError()) {
+    auto result = apiClient.getContent(storage[storageRoomKey]);
+    if (!result) {
       MessageBox(
-        hWnd, _T("JSONの解析に失敗しました。"), _T("ERROR"), MB_ICONERROR);
+        hWnd, strToTstr(result.err()).c_str(), _T("Error"), MB_ICONERROR);
       return;
     }
 
-    if (!doc[_T("status")].IsString()) {
-      MessageBox(
-        hWnd, _T("情報の取得に失敗しました。"), _T("ERROR"), MB_ICONERROR);
-      return;
-    }
-
-    LPCTSTR status = doc[_T("status")].GetString();
-    if (_tcscmp(status, _T("success")) != 0) {
-      MessageBox(
-        hWnd, _T("情報の取得に失敗しました。"), _T("ERROR"), MB_ICONERROR);
-      return;
-    }
-
-    if (!doc[_T("result")].IsObject()) {
-      MessageBox(
-        hWnd, _T("情報の取得に失敗しました。"), _T("ERROR"), MB_ICONERROR);
-      return;
-    }
-
-    if (!doc[_T("result")][_T("content")].IsString()) {
-      MessageBox(
-        hWnd, _T("情報の取得に失敗しました。"), _T("ERROR"), MB_ICONERROR);
-      return;
-    }
-
-    tstring content = doc[_T("result")][_T("content")].GetString();
+    auto content = strToTstr(result.get());
 
     if (!OpenClipboard(hWnd)) {
       MessageBox(hWnd,
@@ -598,7 +465,7 @@ namespace share_everything {
     SendMessage(hIdLabel, WM_SETFONT, (WPARAM)hInputFont, 0);
 
     hIdInput = CreateWindow(_T("EDIT"),
-                            _T(""),
+                            strToTstr(storage[storageRoomKey]).c_str(),
                             WS_CHILD | WS_VISIBLE | WS_BORDER | ES_LEFT,
                             inputX,
                             inputY,

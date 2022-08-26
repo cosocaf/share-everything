@@ -15,6 +15,10 @@ APIは基本的にRESTfulをベースとして設計。
 画像もbase64でエンコードしてdataurl形式で持っている状態です。
 将来的には画像は別で管理したいところ。
 
+MongoDBはAtlas、APIサーバはAWSで本番運営しています。
+運営しているドメインは`share-everything-api.cosocaf.com`です。
+TLS対応しているので<https://share-everything-api.cosocaf.com>へアクセスできます。
+
 ## API概要
 
 このサービスは複数の集団がそれぞれ独立した空間を持ち、その空間内で特定の値を共有するものです。

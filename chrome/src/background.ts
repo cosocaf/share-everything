@@ -5,6 +5,7 @@
 const processCopy = async (
   info: chrome.contextMenus.OnClickData,
   tab: chrome.tabs.Tab,
+  hostName: string,
 ) => {
   const storage = await chrome.storage.local.get(["ROOM_ID_KEY"]);
   if (!("ROOM_ID_KEY" in storage)) {
@@ -32,7 +33,7 @@ const processCopy = async (
   }
 
   // TODO: ディレクトリトラバーサルとか大丈夫？
-  await fetch(`http://localhost:8080/rooms/${id}`, {
+  await fetch(`https://${hostName}/rooms/${id}`, {
     method: "PUT",
     headers: {
       "Content-Type": "application/json",
@@ -42,8 +43,9 @@ const processCopy = async (
 };
 
 const processClipboard = async (
-  info: chrome.contextMenus.OnClickData,
+  _: chrome.contextMenus.OnClickData,
   tab: chrome.tabs.Tab,
+  hostName: string,
 ) => {
   const storage = await chrome.storage.local.get(["ROOM_ID_KEY"]);
   if (!("ROOM_ID_KEY" in storage)) {
@@ -59,7 +61,7 @@ const processClipboard = async (
   if (!("ROOM_ID_KEY" in storage)) return;
   const id = storage.ROOM_ID_KEY as string;
 
-  const response = await fetch(`http://localhost:8080/rooms/${id}`, {
+  const response = await fetch(`https://${hostName}/rooms/${id}`, {
     method: "GET",
   });
   const json = await response.json();
@@ -78,7 +80,7 @@ const processClipboard = async (
     .catch(() => alert("コピーできませんでした。"));
 };
 
-const onTabLoaded = async () => {
+const onTabLoaded = async (hostName: string) => {
   const dialog = document.createElement("share-everything-content-dialog");
   const shadow = dialog.attachShadow({
     mode: "closed",
@@ -124,7 +126,7 @@ const onTabLoaded = async () => {
     dialog.style.visibility = "hidden";
   };
   newButton.onclick = async () => {
-    const response = await fetch("http://localhost:8080/rooms", {
+    const response = await fetch(`https://${hostName}/rooms`, {
       method: "POST",
     });
     const json = await response.json();
@@ -151,11 +153,13 @@ const onTabLoaded = async () => {
   });
 };
 
+const HOST_NAME = "share-everything-api.cosocaf.com";
+
 chrome.tabs.onUpdated.addListener((tabId, changeInfo) => {
   if (changeInfo.status !== "complete") return;
 
   chrome.scripting
-    .executeScript({ target: { tabId }, func: onTabLoaded })
+    .executeScript({ target: { tabId }, func: onTabLoaded, args: [HOST_NAME] })
     .catch(console.error);
 });
 
@@ -182,7 +186,7 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
           .executeScript({
             target: { tabId: tab.id },
             func: processCopy,
-            args: [info, tab],
+            args: [info, tab, HOST_NAME],
           })
           .catch(console.error);
       }
@@ -193,7 +197,7 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
           .executeScript({
             target: { tabId: tab.id },
             func: processClipboard,
-            args: [info, tab],
+            args: [info, tab, HOST_NAME],
           })
           .catch(console.error);
       }

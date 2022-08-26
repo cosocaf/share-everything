@@ -42,19 +42,29 @@ const rooms = db.collection<Room>("rooms");
 
 // TODO: express v5以降は非同期関数渡せるようになるらしいよ
 
+const generateRoomId = () => {
+  for (;;) {
+    // これのためだけにcryptoつかうのはオーバースペックな気がする
+    const id = crypto.randomBytes(6).toString("base64").substring(0, 6);
+    if (id.includes("/")) continue;
+    return id;
+  }
+};
+
 app.post("/rooms", (_, res) => {
   // TODO: 認証機能とかあったほうがいいよね
   // const id = v4(); // UUIDとか長すぎてタイプが無理だから却下
 
-  // これのためだけにcryptoつかうのはオーバースペックな気がする
-  const id = crypto.randomBytes(6).toString("base64").substring(0, 6);
+  const id = generateRoomId();
 
   rooms
     .insertOne({ id, content: "" })
     .then(() => {
+      console.log(`Room created: ${id}`);
       res.send({ status: "success", result: { id } });
     })
     .catch((err) => {
+      console.error(err);
       if (err instanceof Error) {
         res.send({ status: "error", reason: err.message });
       } else {
@@ -66,16 +76,20 @@ app.post("/rooms", (_, res) => {
 app.get("/rooms/:id", (req, res) => {
   const id = req.params.id;
 
+  console.log(`Requested get: ${id}`);
+
   rooms
     .findOne({ id }, { projection: { content: 1 } })
     .then((room) => {
       if (room) {
+        console.log(`Found content(${id}): ${room.content}`);
         res.send({ status: "success", result: { content: room.content } });
       } else {
         throw new Error("Invalid ID.");
       }
     })
     .catch((err) => {
+      console.error(err);
       if (err instanceof Error) {
         res.send({ status: "error", reason: err.message });
       } else {
@@ -89,12 +103,15 @@ app.put(
     const id = req.params.id;
     const content = req.body.content;
 
+    console.log(`Request put: ${id} = ${content}`);
+
     rooms
       .updateOne({ id }, { $set: { content } })
       .then(() => {
         res.send({ status: "success", result: {} });
       })
       .catch((err) => {
+        console.error(err);
         if (err instanceof Error) {
           res.send({ status: "error", reason: err.message });
         } else {
@@ -106,12 +123,15 @@ app.put(
 app.delete("/rooms/:id", (req, res) => {
   const id = req.params.id;
 
+  console.log(`Requested delete: ${id}`);
+
   rooms
     .deleteOne({ id })
     .then(() => {
       res.send({ status: "success", result: {} });
     })
     .catch((err) => {
+      console.error(err);
       if (err instanceof Error) {
         res.send({ status: "error", reason: err.message });
       } else {

@@ -7,7 +7,7 @@
     "watch:file": "cpx -w src/**/*.{json,css,html,png} dist",
     "watch:tsc": "tsc -w",
     "dev": "run-p watch:file watch:tsc",
-    "copy": "cpx src/**/*.{json,css,html,png} dist",
+    "copy": "cpx 'src/**/*.{json,css,html,png}' dist",
     "build:tsc": "tsc",
     "build": "run-p copy build:tsc"
   },

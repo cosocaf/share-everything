@@ -13,7 +13,7 @@ APIは基本的にRESTfulをベースとして設計。
 
 現状の実装は全てをテキストとして保持します。
 画像もbase64でエンコードしてdataurl形式で持っている状態です。
-将来的には画像は別で管理したいところ。
+将来的には画像は別で管理したいところ。S3とか。
 
 MongoDBはAtlas、APIサーバはAWSで本番運営しています。
 運営しているドメインは`share-everything-api.cosocaf.com`です。
@@ -31,7 +31,7 @@ TLS対応しているので<https://share-everything-api.cosocaf.com>へアク�
 
 APIから返される値のフォーマットは次の通り。
 
-```json
+```ts
 {
   "status": "success" | "error",
   // もしstatusがsuccessならば
@@ -49,7 +49,7 @@ APIから返される値のフォーマットは次の通り。
 
 APIから返される値のフォーマットは次の通り。
 
-```json
+```ts
 {
   "status": "success" | "error",
   // もしstatusがsuccessならば
@@ -67,7 +67,7 @@ APIから返される値のフォーマットは次の通り。
 
 APIから返される値のフォーマットは次の通り。
 
-```json
+```ts
 {
   "status": "success" | "error",
   // もしstatusがsuccessならば
@@ -81,7 +81,7 @@ APIから返される値のフォーマットは次の通り。
 
 HTTPヘッダに`Content-Type: application/json`を指定すること。
 
-```json
+```ts
 {
   "content": "<格納する値>"
 }
@@ -93,7 +93,7 @@ HTTPヘッダに`Content-Type: application/json`を指定すること。
 
 APIから返される値のフォーマットは次の通り。
 
-```json
+```ts
 {
   "status": "success" | "error",
   // もしstatusがsuccessならば
@@ -137,4 +137,21 @@ cd ../
 docker-compose up --build
 ```
 
-これで動くはずです。多分。
+これで動くはず。多分。
+
+## TODO
+
+ファイルをアップロードできるようにする。
+ただしJSON形式でアップロードさせたいのでBase64とかにエンコードしてアップロードする。
+`PUT`のbodyを拡張して以下の形にする。
+
+```ts
+{
+  "content": "<格納する値>",
+  "type": "text" | "base64",
+  // mimeの一例、任意のmimeを受け入れる予定
+  "mime": "text/plane" | "image/png" | "audio/mpeg" | "font/ttf" | "application/pdf"
+}
+```
+
+ただしmimeで嘘ついている可能性が十分あるのでセキュリティリスクになりうる。

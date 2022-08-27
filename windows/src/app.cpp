@@ -39,7 +39,7 @@ namespace share_everything {
     wndcls.style         = CS_HREDRAW | CS_VREDRAW;
     wndcls.lpfnWndProc   = wndProc;
     wndcls.hInstance     = hInst;
-    wndcls.hIcon         = LoadIcon(nullptr, IDI_APPLICATION);
+    wndcls.hIcon         = LoadIcon(nullptr, MAKEINTRESOURCE(IDI_APP_ICON));
     wndcls.hCursor       = LoadCursor(nullptr, IDC_ARROW);
     wndcls.hbrBackground = (HBRUSH)GetStockObject(WHITE_BRUSH);
     wndcls.lpszClassName = className;
@@ -643,7 +643,7 @@ namespace share_everything {
         app = reinterpret_cast<App*>(
           reinterpret_cast<LPCREATESTRUCT>(lp)->lpCreateParams);
         SetWindowLongPtr(hWnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(app));
-        if (!app->notifyIcon.init(hWnd)) {
+        if (!app->notifyIcon.init(app->getHInst(), hWnd)) {
           MessageBox(NULL,
                      _T("タスクバーの初期化に失敗しました。"),
                      _T("FATAL ERROR"),

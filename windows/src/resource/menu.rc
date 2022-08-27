@@ -9,3 +9,6 @@ BEGIN
     MENUITEM "E&xit", IDM_EXIT
   END
 END
+
+IDI_APP_ICON ICON "assets/icon_128x128.ico"
+IDI_NOTIFY_ICON ICON "assets/icon_16x16.ico"

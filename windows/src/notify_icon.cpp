@@ -1,14 +1,14 @@
 /**
  * @file notify_icon.cpp
  * @author cosocaf (cosocaf@gmail.com)
- * @brief 
+ * @brief
  * @version 0.1
  * @date 2022-08-26
- * 
+ *
  * notify_icon.hの実装。
- * 
+ *
  * @copyright Copyright (c) 2022
- * 
+ *
  */
 
 #include "notify_icon.h"
@@ -27,14 +27,14 @@ namespace share_everything {
     Shell_NotifyIcon(NIM_DELETE, &nid);
   }
 
-  BOOL NotifyIcon::init(HWND hWnd) noexcept {
+  BOOL NotifyIcon::init(HINSTANCE hInst, HWND hWnd) noexcept {
     NOTIFYICONDATA nid{};
     nid.cbSize           = sizeof(nid);
     nid.hWnd             = hWnd;
     nid.guidItem         = __uuidof(UUID);
     nid.uFlags           = NIF_ICON | NIF_MESSAGE | NIF_SHOWTIP | NIF_GUID;
     nid.uCallbackMessage = WM_NOTIFY_ICON;
-    nid.hIcon            = LoadIcon(NULL, IDI_APPLICATION);
+    nid.hIcon            = LoadIcon(hInst, MAKEINTRESOURCE(IDI_NOTIFY_ICON));
     _tcscpy_s(nid.szTip, _T("Share Everything"));
     Shell_NotifyIcon(NIM_ADD, &nid);
 

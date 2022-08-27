@@ -34,10 +34,11 @@ namespace share_everything {
     /**
      * @brief 初期化する。成功したらTRUEを、失敗したらFALSEを返す。
      *
+     * @param hInst インスタンスハンドル
      * @param hWnd ウィンドウハンドル
      * @return BOOL 成功フラグ
      */
-    BOOL init(HWND hWnd) noexcept;
+    BOOL init(HINSTANCE hInst, HWND hWnd) noexcept;
 
     /**
      * @brief 通知領域に届くウィンドウメッセージを処理する。

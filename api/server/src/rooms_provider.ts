@@ -76,7 +76,7 @@ export class RoomsProvider extends Provider {
     req: Request<
       { id: string },
       unknown,
-      { content: string; type: string; mime: string }
+      { content: string; type: string }
     >,
     res: Response,
   ) {

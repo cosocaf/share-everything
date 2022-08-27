@@ -2,6 +2,9 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 // ↑型定義めんどいからとりま設定、後でちゃんとしようね
 
+const ORIGIN = "https://share-everything-api.cosocaf.com";
+// const ORIGIN = "http://localhost:8080";
+
 const processCopy = async (
   info: chrome.contextMenus.OnClickData,
   tab: chrome.tabs.Tab,
@@ -170,9 +173,6 @@ const onTabLoaded = async (origin: string) => {
     dialog.style.visibility = "hidden";
   });
 };
-
-// const ORIGIN = "https://share-everything-api.cosocaf.com";
-const ORIGIN = "http://localhost:8080";
 
 chrome.tabs.onUpdated.addListener((tabId, changeInfo) => {
   if (changeInfo.status !== "complete") return;

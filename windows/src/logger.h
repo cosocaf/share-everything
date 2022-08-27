@@ -26,7 +26,9 @@ namespace share_everything {
    */
   class Logger {
     bool consoleEnabled;
-    void log(tstring_view logLevel,
+    HANDLE hFile;
+    void log(WORD colorFlag,
+             tstring_view logLevel,
              tstring_view message,
              tstring_view group,
              tstring_view func,

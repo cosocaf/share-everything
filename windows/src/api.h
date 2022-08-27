@@ -39,6 +39,7 @@ namespace share_everything {
      *
      */
     static constexpr auto PROTOCOL = "https";
+    // static constexpr auto PROTOCOL = "http";
     /**
      * @brief APIのホストネーム。HTTPS化が非常にだるかった。
      *

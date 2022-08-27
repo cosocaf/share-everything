@@ -83,7 +83,10 @@ HTTPヘッダに`Content-Type: application/json`を指定すること。
 
 ```ts
 {
-  "content": "<格納する値>"
+  // base64形式のデータ
+  "content": "<格納する値>",
+  // 生テキストを保持するならtext, 短縮URL化するならurl
+  "type": "text" | "url"
 }
 ```
 
@@ -138,20 +141,3 @@ docker-compose up --build
 ```
 
 これで動くはず。多分。
-
-## TODO
-
-ファイルをアップロードできるようにする。
-ただしJSON形式でアップロードさせたいのでBase64とかにエンコードしてアップロードする。
-`PUT`のbodyを拡張して以下の形にする。
-
-```ts
-{
-  "content": "<格納する値>",
-  "type": "text" | "base64",
-  // mimeの一例、任意のmimeを受け入れる予定
-  "mime": "text/plane" | "image/png" | "audio/mpeg" | "font/ttf" | "application/pdf"
-}
-```
-
-ただしmimeで嘘ついている可能性が十分あるのでセキュリティリスクになりうる。

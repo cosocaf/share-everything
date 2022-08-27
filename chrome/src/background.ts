@@ -5,7 +5,7 @@
 const processCopy = async (
   info: chrome.contextMenus.OnClickData,
   tab: chrome.tabs.Tab,
-  hostName: string,
+  origin: string,
 ) => {
   const storage = await chrome.storage.local.get(["ROOM_ID_KEY"]);
   if (!("ROOM_ID_KEY" in storage)) {
@@ -22,8 +22,26 @@ const processCopy = async (
   const id = storage.ROOM_ID_KEY as string;
 
   let content = "";
-  if (info.mediaType) {
-    content = info.srcUrl as string;
+  let type = "text";
+  if (info.mediaType && info.srcUrl) {
+    const reader = new FileReader();
+    const media = await fetch(info.srcUrl);
+    const data = await media.blob();
+    content = await new Promise((resolve, reject) => {
+      reader.onload = () => {
+        if (reader.result == null) {
+          reject("Result is null.");
+          return;
+        }
+
+        const dataUrl = reader.result.toString();
+        // Data URLは"data:*/*;base64,"ではじまる。
+        resolve(dataUrl.slice(dataUrl.indexOf(",") + 1));
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(data);
+    });
+    type = "url";
   } else if (info.linkUrl) {
     content = info.linkUrl;
   } else if (info.selectionText) {
@@ -33,19 +51,19 @@ const processCopy = async (
   }
 
   // TODO: ディレクトリトラバーサルとか大丈夫？
-  await fetch(`https://${hostName}/rooms/${id}`, {
+  await fetch(`${origin}/rooms/${id}`, {
     method: "PUT",
     headers: {
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ content }),
+    body: JSON.stringify({ content, type }),
   });
 };
 
 const processClipboard = async (
   _: chrome.contextMenus.OnClickData,
   tab: chrome.tabs.Tab,
-  hostName: string,
+  origin: string,
 ) => {
   const storage = await chrome.storage.local.get(["ROOM_ID_KEY"]);
   if (!("ROOM_ID_KEY" in storage)) {
@@ -61,7 +79,7 @@ const processClipboard = async (
   if (!("ROOM_ID_KEY" in storage)) return;
   const id = storage.ROOM_ID_KEY as string;
 
-  const response = await fetch(`https://${hostName}/rooms/${id}`, {
+  const response = await fetch(`${origin}/rooms/${id}`, {
     method: "GET",
   });
   const json = await response.json();
@@ -80,7 +98,7 @@ const processClipboard = async (
     .catch(() => alert("コピーできませんでした。"));
 };
 
-const onTabLoaded = async (hostName: string) => {
+const onTabLoaded = async (origin: string) => {
   const dialog = document.createElement("share-everything-content-dialog");
   const shadow = dialog.attachShadow({
     mode: "closed",
@@ -126,7 +144,7 @@ const onTabLoaded = async (hostName: string) => {
     dialog.style.visibility = "hidden";
   };
   newButton.onclick = async () => {
-    const response = await fetch(`https://${hostName}/rooms`, {
+    const response = await fetch(`${origin}/rooms`, {
       method: "POST",
     });
     const json = await response.json();
@@ -153,13 +171,14 @@ const onTabLoaded = async (hostName: string) => {
   });
 };
 
-const HOST_NAME = "share-everything-api.cosocaf.com";
+// const ORIGIN = "https://share-everything-api.cosocaf.com";
+const ORIGIN = "http://localhost:8080";
 
 chrome.tabs.onUpdated.addListener((tabId, changeInfo) => {
   if (changeInfo.status !== "complete") return;
 
   chrome.scripting
-    .executeScript({ target: { tabId }, func: onTabLoaded, args: [HOST_NAME] })
+    .executeScript({ target: { tabId }, func: onTabLoaded, args: [ORIGIN] })
     .catch(console.error);
 });
 
@@ -186,7 +205,7 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
           .executeScript({
             target: { tabId: tab.id },
             func: processCopy,
-            args: [info, tab, HOST_NAME],
+            args: [info, tab, ORIGIN],
           })
           .catch(console.error);
       }
@@ -197,7 +216,7 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
           .executeScript({
             target: { tabId: tab.id },
             func: processClipboard,
-            args: [info, tab, HOST_NAME],
+            args: [info, tab, ORIGIN],
           })
           .catch(console.error);
       }

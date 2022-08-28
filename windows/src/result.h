@@ -176,6 +176,10 @@ namespace share_everything {
       return Result<OK, Error>(std::move(error));
     }
   };
+  template <typename Error, size_t N>
+  decltype(auto) [[nodiscard]] error(const Error (&error)[N]) {
+    return error_t((const Error*)error);
+  }
   template <typename Error>
   decltype(auto) [[nodiscard]] error(const Error& error) {
     return error_t(error);

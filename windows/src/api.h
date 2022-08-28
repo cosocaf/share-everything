@@ -23,6 +23,7 @@
 
 #include <optional>
 #include <string>
+#include <vector>
 
 #include "result.h"
 
@@ -75,13 +76,26 @@ namespace share_everything {
     Result<std::string, std::string> getContent(std::string_view roomId);
     /**
      * @brief ルームの値を更新する。
+     * 値の形式はテキスト。
      *
+     * @param roomId 更新するルームのID。
      * @param content 更新する値。
      * @return Result<_, std::string>
      * 成功したら何も返さず、失敗したらその原因を返す。
      */
-    Result<_, std::string> putContent(std::string_view roomId,
-                                      std::string_view content);
+    Result<_, std::string> putTextContent(std::string_view roomId,
+                                          std::string_view content);
+    /**
+     * @brief ルームの値を更新する。
+     * 値の適式はバイナリ。
+     *
+     * @param roomId 更新するルームのID。
+     * @param content 更新する値。
+     * @return Result<_, std::string>
+     * 成功したら何も返さず、失敗したらその原因を返す。
+     */
+    Result<_, std::string> putBinaryContent(std::string_view roomId,
+                                            const std::vector<char>& content);
 
     /**
      * @brief ルームを新規作成する。
@@ -155,7 +169,7 @@ namespace share_everything {
     static size_t readCallback(char* buffer,
                                size_t size,
                                size_t nmemb,
-                               char* stream);
+                               std::pair<std::string_view*, size_t>* stream);
   };
 } // namespace share_everything
 

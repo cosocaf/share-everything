@@ -24,13 +24,14 @@ const processCopy = async (
   if (!("ROOM_ID_KEY" in storage)) return;
   const id = storage.ROOM_ID_KEY as string;
 
-  let content = "";
+  let content: string;
   let type = "text";
+  let format = "raw";
   if (info.mediaType && info.srcUrl) {
-    const reader = new FileReader();
     const media = await fetch(info.srcUrl);
     const data = await media.blob();
     content = await new Promise((resolve, reject) => {
+      const reader = new FileReader();
       reader.onload = () => {
         if (reader.result == null) {
           reject("Result is null.");
@@ -45,6 +46,7 @@ const processCopy = async (
       reader.readAsDataURL(data);
     });
     type = "url";
+    format = "base64";
   } else if (info.linkUrl) {
     content = info.linkUrl;
   } else if (info.selectionText) {
@@ -59,7 +61,7 @@ const processCopy = async (
     headers: {
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ content, type }),
+    body: JSON.stringify({ content, type, format }),
   });
 };
 

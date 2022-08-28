@@ -83,10 +83,12 @@ HTTPヘッダに`Content-Type: application/json`を指定すること。
 
 ```ts
 {
-  // base64形式のデータ
+  // formatで示された形式にフォーマットされたデータ
   "content": "<格納する値>",
   // 生テキストを保持するならtext, 短縮URL化するならurl
-  "type": "text" | "url"
+  "type": "text" | "url",
+  // contentの形式。rawは未加工、base64はBase64形式。
+  "format": "raw" | "base64",
 }
 ```
 

@@ -19,6 +19,16 @@
 #define STRICT
 
 #include <Windows.h>
+#include <objidl.h>
 #include <tchar.h>
+
+#include <algorithm>
+
+namespace Gdiplus {
+  using std::max;
+  using std::min;
+} // namespace Gdiplus
+
+#include <gdiplus.h>
 
 #endif // SHARE_EVERYTHING_PCH_H_

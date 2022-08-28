@@ -9,6 +9,7 @@ add_executable(
   logger.cpp
   storage.cpp
   app.cpp
+  image_manager.cpp
   notify_icon.cpp
   api.cpp
 )
@@ -19,4 +20,4 @@ target_sources(
 )
 
 add_dependencies(share-everything zlib)
-target_link_libraries(share-everything Pathcch Wldap32 OpenSSL::SSL CURL::libcurl zlibstaticd)
+target_link_libraries(share-everything Pathcch Crypt32 Gdiplus Wldap32 OpenSSL::SSL CURL::libcurl zlibstaticd)

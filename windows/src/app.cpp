@@ -25,6 +25,7 @@
 #define IDB_REGISTER_BUTTON 502
 #define IDH_COPY 1001
 #define IDH_PASTE 1002
+#define IDH_LOAD_CLIPBOARD 1003
 
 namespace share_everything {
   App::App(HINSTANCE hInst)
@@ -89,9 +90,21 @@ namespace share_everything {
       exit(GetLastError());
     }
 
+    // コピー
     RegisterHotKey(hWnd, IDH_COPY, MOD_CONTROL | MOD_ALT, 'C');
+    // ペースト
     RegisterHotKey(hWnd, IDH_PASTE, MOD_CONTROL | MOD_ALT, 'V');
+    // クリップボードの中身読み取ってコピー
+    RegisterHotKey(hWnd, IDH_LOAD_CLIPBOARD, MOD_CONTROL | MOD_ALT, 'B');
 
+    if (!imageManager.init()) {
+      LOG_ERROR(_T("Failed to initialize image manager."), _T("App"));
+      MessageBox(NULL,
+                 _T("画像処理機能の初期化に失敗しました。"),
+                 _T("FATAL ERROR"),
+                 MB_ICONERROR);
+      exit(GetLastError());
+    }
     ShowWindow(hWnd, SW_HIDE);
     UpdateWindow(hWnd);
 
@@ -101,6 +114,7 @@ namespace share_everything {
     if (hWnd != nullptr) {
       UnregisterHotKey(hWnd, IDH_COPY);
       UnregisterHotKey(hWnd, IDH_PASTE);
+      UnregisterHotKey(hWnd, IDH_LOAD_CLIPBOARD);
       DestroyWindow(hWnd);
       hWnd = nullptr;
     }
@@ -217,7 +231,7 @@ namespace share_everything {
     }
 
     auto result
-      = apiClient.putContent(storage[storageRoomKey], tstrToStr(text));
+      = apiClient.putTextContent(storage[storageRoomKey], tstrToStr(text));
     if (!result) {
       MessageBox(
         hWnd, strToTstr(result.err()).c_str(), _T("Error"), MB_ICONERROR);
@@ -225,6 +239,28 @@ namespace share_everything {
     }
 
     LOG_INFO(_T("Text successfully uploaded."), _T("App"));
+  }
+  void App::uploadBitmap(LPBITMAPINFO bitmapInfo, HBITMAP hBitmap) {
+    if (storage[storageRoomKey].empty()) {
+      LOG_INFO(_T("No ID registered."), _T("App"));
+      return;
+    }
+
+    auto decodeResult = imageManager.decodeBitmap(hBitmap);
+    if (!decodeResult) {
+      LOG_ERROR(decodeResult.err().c_str(), _T("App"));
+      return;
+    }
+
+    auto result
+      = apiClient.putBinaryContent(storage[storageRoomKey], decodeResult.get());
+    if (!result) {
+      MessageBox(
+        hWnd, strToTstr(result.err()).c_str(), _T("Error"), MB_ICONERROR);
+      return;
+    }
+
+    LOG_INFO(_T("Bitmap successfully uploaded."), _T("App"));
   }
 
   void App::copy() {
@@ -568,27 +604,48 @@ namespace share_everything {
   }
 
   void App::onUpdateClipboard() {
-    if (clipboardMonitorEnabled) {
-      clipboardMonitorEnabled = false;
+    if (!OpenClipboard(nullptr)) {
+      LOG_ERROR(_T("Failed to open clipboard."), _T("App"));
+      return;
+    }
 
-      if (!OpenClipboard(nullptr)) {
-        LOG_ERROR(_T("Failed to open clipboard."), _T("App"));
-        return;
-      }
+    if (IsClipboardFormatAvailable(CF_BITMAP)) {
+      auto hBitmapInfoMem     = GetClipboardData(CF_DIB);
+      LPBITMAPINFO bitmapInfo = (LPBITMAPINFO)GlobalLock(hBitmapInfoMem);
+      GlobalUnlock(hBitmapInfoMem);
 
-#ifdef _UNICODE
-      auto hMem = GetClipboardData(CF_UNICODETEXT);
-#else
-      auto hMem = GetClipboardData(CF_TEXT);
-#endif
+      HBITMAP bitmap = (HBITMAP)GetClipboardData(CF_BITMAP);
+
+      CloseClipboard();
+
+      LOG_INFO(_T("Clipboard bitmap contents were successfully copied"),
+               _T("App"));
+
+      uploadBitmap(bitmapInfo, bitmap);
+    } else if (IsClipboardFormatAvailable(CF_UNICODETEXT)) {
+      auto hMem    = GetClipboardData(CF_UNICODETEXT);
       tstring text = (LPTSTR)GlobalLock(hMem);
 
       GlobalUnlock(hMem);
       CloseClipboard();
 
-      LOG_INFO(std::format(
-                 _T("Clipboard contents were successfully copied: {}"), text),
-               _T("App"));
+      LOG_INFO(
+        std::format(_T("Clipboard text contents were successfully copied: {}"),
+                    text),
+        _T("App"));
+
+      uploadText(text);
+    } else if (IsClipboardFormatAvailable(CF_TEXT)) {
+      auto hMem    = GetClipboardData(CF_TEXT);
+      tstring text = (LPTSTR)GlobalLock(hMem);
+
+      GlobalUnlock(hMem);
+      CloseClipboard();
+
+      LOG_INFO(
+        std::format(_T("Clipboard text contents were successfully copied: {}"),
+                    text),
+        _T("App"));
 
       uploadText(text);
     }
@@ -601,7 +658,10 @@ namespace share_everything {
       case NotifyIcon::WM_NOTIFY_ICON:
         return app->notifyIcon.handleMessage(app, wp, lp);
       case WM_CLIPBOARDUPDATE:
-        app->onUpdateClipboard();
+        if (app->clipboardMonitorEnabled) {
+          app->clipboardMonitorEnabled = false;
+          app->onUpdateClipboard();
+        }
         return 0;
       case WM_HOTKEY:
         switch (wp) {
@@ -610,6 +670,9 @@ namespace share_everything {
             return 0;
           case IDH_PASTE:
             app->paste();
+            return 0;
+          case IDH_LOAD_CLIPBOARD:
+            app->onUpdateClipboard();
             return 0;
         }
         break;

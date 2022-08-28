@@ -13,6 +13,8 @@
 
 #include "api.h"
 
+#include <wincrypt.h>
+
 #include <cassert>
 #include <format>
 
@@ -50,13 +52,54 @@ namespace share_everything {
 
     return ok(doc["result"]["content"].GetString());
   }
-  Result<_, std::string> ApiClient::putContent(std::string_view roomId,
-                                               std::string_view content) {
+  Result<_, std::string> ApiClient::putTextContent(std::string_view roomId,
+                                                   std::string_view content) {
     rapidjson::StringBuffer buffer;
     rapidjson::Writer writer(buffer);
     writer.StartObject();
     writer.Key("content");
     writer.String(content.data());
+    writer.Key("type");
+    writer.String("text");
+    writer.Key("format");
+    writer.String("raw");
+    writer.EndObject();
+
+    auto result
+      = fetch(std::format("rooms/{}", roomId), Method::Put, buffer.GetString());
+    if (!result) {
+      return error(result.err());
+    }
+
+    return ok();
+  }
+  Result<_, std::string> ApiClient::putBinaryContent(
+    std::string_view roomId,
+    const std::vector<char>& content) {
+    DWORD cbBinary;
+    CryptBinaryToString((BYTE*)content.data(),
+                        content.size(),
+                        CRYPT_STRING_BASE64,
+                        nullptr,
+                        &cbBinary);
+
+    tstring contentBuffer;
+    contentBuffer.resize(cbBinary);
+    CryptBinaryToString((BYTE*)content.data(),
+                        content.size(),
+                        CRYPT_STRING_BASE64,
+                        contentBuffer.data(),
+                        &cbBinary);
+
+    rapidjson::StringBuffer buffer;
+    rapidjson::Writer writer(buffer);
+    writer.StartObject();
+    writer.Key("content");
+    writer.String(tstrToStr(contentBuffer).data());
+    writer.Key("type");
+    writer.String("url");
+    writer.Key("format");
+    writer.String("base64");
     writer.EndObject();
 
     auto result
@@ -136,11 +179,14 @@ namespace share_everything {
           }
         }
         break;
-      case Method::Put:
+      case Method::Put: {
         assert(body.has_value());
+
+        std::pair<std::string_view*, size_t> pair(&body.value(), 0);
+        curl_off_t size = body->size();
         curl_easy_setopt(curl, CURLOPT_UPLOAD, 1L);
-        curl_easy_setopt(curl, CURLOPT_READDATA, body->data());
-        curl_easy_setopt(curl, CURLOPT_INFILESIZE_LARGE, body->size());
+        curl_easy_setopt(curl, CURLOPT_READDATA, &pair);
+        curl_easy_setopt(curl, CURLOPT_INFILESIZE_LARGE, size);
         curl_easy_setopt(curl, CURLOPT_READFUNCTION, readCallback);
         if (contentType) {
           auto slist = curl_slist_append(
@@ -149,6 +195,7 @@ namespace share_everything {
           curl_easy_setopt(curl, CURLOPT_HTTPHEADER, slist);
         }
         break;
+      }
       case Method::Delete:
         curl_easy_setopt(curl, CURLOPT_CUSTOMREQUEST, "DELETE");
         break;
@@ -215,8 +262,10 @@ namespace share_everything {
   size_t ApiClient::readCallback(char* buffer,
                                  size_t size,
                                  size_t nmemb,
-                                 char* stream) {
-    strcpy_s(buffer, size * nmemb, stream);
-    return std::min(strlen(stream), size * nmemb);
+                                 std::pair<std::string_view*, size_t>* stream) {
+    size_t len = std::min(stream->first->size() - stream->second, size * nmemb);
+    memcpy(buffer, stream->first->data() + stream->second, len);
+    stream->second += len;
+    return len;
   }
 } // namespace share_everything

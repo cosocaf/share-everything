@@ -20,6 +20,7 @@
 #include <set>
 
 #include "api.h"
+#include "image_manager.h"
 #include "notify_icon.h"
 #include "storage.h"
 #include "tchar_util.h"
@@ -81,7 +82,6 @@ namespace share_everything {
     /**
      * @brief GUIに使用するフォントの優先順列挙。
      *
-     * constまみれで草
      */
     static constexpr const TCHAR* const preferredFonts[] = {
       _T("游ゴシック"),
@@ -146,6 +146,8 @@ namespace share_everything {
      *
      */
     Storage storage;
+
+    ImageManager imageManager;
 
   public:
     /**
@@ -212,10 +214,19 @@ namespace share_everything {
 
     /**
      * @brief 現在所属しているルームあてに値の更新命令を発行する。
+     * 値の形式はテキスト。
      *
      * @param text 更新する値。
      */
     void uploadText(tstring_view text);
+
+    /**
+     * @brief 現在所属しているルームあてに値の更新命令を発行する。
+     * 値の形式はBitmap。
+     *
+     * @param bitmapInfo 更新する値。
+     */
+    void uploadBitmap(LPBITMAPINFO bitmapInfo, HBITMAP bitmap);
 
     /**
      * @brief

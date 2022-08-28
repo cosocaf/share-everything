@@ -10,6 +10,7 @@ Share EverythingクライアントのWindows実装です。Mac/Linuxの対応は
   - 設定画面ではIDの登録/削除/作成ができる。
 - Ctrl+Alt+Cで選択したテキストをAPIを経由してサーバにアップロードする。
 - Ctrl+Alt+Vでサーバにある値をペーストできる。(Chrome拡張はこれができない)
+- Ctrl+Alt+Bでクリップボードの中身をサーバにアップロードする。
 - デバッグのため起動オプションに`--enable-debug`をつけるとログ表示のコンソールが出現する。
   - ログレベルは`Debug` `Info` `Warn` `Error` `Fatal`の5つ。
   - ログ表示時に`D/App`や`E/App`のようにどのグループでどのレベルのログが発生したのかわかるようになっている。(Android Studioのパクリ)

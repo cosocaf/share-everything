@@ -76,28 +76,36 @@ export class RoomsProvider extends Provider {
     req: Request<
       { id: string },
       unknown,
-      { content: string; type: string }
+      { content: string; type: string; format: string }
     >,
     res: Response,
   ) {
     const id = req.params.id;
     const content = req.body.content;
     const type = req.body.type || "text";
+    const format = req.body.format || "raw";
 
     console.log(`Requested put: id=${id}, type=${type}`);
 
     try {
+      let decoded: Buffer;
+      if (format === "raw") {
+        decoded = Buffer.from(content, "utf8");
+      } else if (format === "base64") {
+        decoded = Buffer.from(content, "base64");
+      } else {
+        throw new Error(`Invalid format: ${format}`);
+      }
+
       if (type === "text") {
+        console.log(`Text content: ${content}`);
         await this.rooms.updateOne(
           { id },
-          { $set: { content } },
+          { $set: { content: decoded.toString() } },
         );
         res.send({ status: "success", result: {} });
       } else if (type === "url") {
-        await this.awsClient.upload(
-          `contents/${id}`,
-          Buffer.from(content, "base64"),
-        );
+        await this.awsClient.upload(`contents/${id}`, decoded);
         await this.rooms.updateOne(
           { id },
           { $set: { content: `${origin}/contents/${id}` } },
